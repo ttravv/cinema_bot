@@ -4,12 +4,11 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from aiogram.filters.command import Command, CommandObject
 from dotenv import dotenv_values
-import httpx
+from utils.callback_data import Year, Genre
+from utils.keyboards import genre_kb, years_kb
+from utils.network import get_request, movie_by_genre_year, parsing
 
-genres = ['аниме', 
-          'биография', 
-          'боевик', 'вестерн', 'военный', 'детектив', 'детский', 'для взрослых', 'документальный', 'драма', 'игра', 'история', 'комедия', 'концерт', 'короткометражка', 'криминал', 'мелодрама', 'музыка', 'мультфильм', 'мюзикл', 'новости', 'приключения', 'реальное ТВ', 'семейный', 'спорт', 'ток-шоу', 'триллер', 'ужасы', 'фантастика', 'фильм-нуар', 'фэнтези', 'церемония']
-# Включаем логирование, чтобы не пропустить важные сообщения
+# Включаем логирование
 logging.basicConfig(level=logging.INFO)
 # Объект бота
 config = dotenv_values(".env")
@@ -32,22 +31,29 @@ async def start_button(message: types.Message):
 
 @dp.message(F.text== "Хочу посмотреть фильм")
 async def after(message: types.Message):
-    builder = InlineKeyboardBuilder()
-    for i in genres:
-        builder.add(types.InlineKeyboardButton(text=i, callback_data=f'genre_{i}')
-        )
-
-    builder.adjust(2)
+    builder = genre_kb()
     await message.answer('Выберите жанр', 
-                         reply_markup=builder.as_markup()
-                        )
+                         reply_markup=builder.as_markup())
 
-@dp.callback_query(F.data.startswith('genre_'))
-async def genre_handler(callback: types.CallbackQuery):
-    genre = callback.data.split('_')[1]
-    
-    await callback.message.answer(f'Вы выбрали жанр {genre}')
+@dp.callback_query(Genre.filter())
+async def genre_handler(callback: types.CallbackQuery, callback_data: Genre):
+    genre = callback_data.name
+    builder = years_kb(genre)
+    await callback.message.answer(f'Вы выбрали жанр {genre}. Выберите год.',
+                                  reply_markup=builder.as_markup())
     await callback.answer()
+
+@dp.callback_query(Year.filter())
+async def year_handler(callback: types.CallbackQuery, callback_data: Year):
+    years = callback_data.range
+    genre = callback_data.genre
+    url = movie_by_genre_year(genre, years)
+    about_films = await get_request(url)
+    for i in about_films:
+        card = parsing(i)
+        await callback.message.answer(card)
+    await callback.answer()
+
 
 async def main():
     await dp.start_polling(bot)
