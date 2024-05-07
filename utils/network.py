@@ -16,11 +16,11 @@ async def get_request(url: str) -> list[dict]:
     return response.json()['docs']
 
 def parsing(film_info: dict) -> str:
-    return f'Название фильма: {film_info['name']}' + \
-    f'Описание фильма: {film_info['description']}' + \
-    f'Рейтинг фильма: {film_info['rating']['imdb']}' + \
-    f'Год выпуска: {film_info['year']}' + \
-    f'Ссылка на фильм: https://www.kinopoisk.ru/film/{film_info['id']}'
+    return f'Название фильма: {film_info['name']} \n' + \
+    f'Описание фильма: {film_info['description']} \n' + \
+    f'Рейтинг фильма: {film_info['rating']['imdb']} \n' + \
+    f'Год выпуска: {film_info['year']} \n' + \
+    f'Ссылка на фильм: https://www.kinopoisk.ru/film/{film_info['id']} \n'
     
 
 
